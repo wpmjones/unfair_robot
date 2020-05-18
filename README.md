@@ -1,2 +1,3 @@
-# unfair_robot
+# Unfair Robot
 Bot for Unfair Warfare
+
