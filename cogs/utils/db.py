@@ -517,11 +517,11 @@ class Table(metaclass=TableMeta):
         old_init = kwargs.pop('init', None)
 
         async def init(con):
-            await con.set_type_codec('jsonb', schema='pg_catalog', encoder=_encode_jsonb, decoder=_decode_jsonb, format='text')
+            await con.set_type_codec('jsonb', schema='public', encoder=_encode_jsonb, decoder=_decode_jsonb, format='text')
             if old_init is not None:
                 await old_init(con)
 
-        cls._pool = pool = await asyncpg.create_pool(uri, init=init, **kwargs)
+        cls._pool = pool = await asyncpg.create_pool(uri, **kwargs)
         return pool
 
     @classmethod

@@ -13,3 +13,7 @@ class General(commands.Cog):
         if not player:
             return await ctx.send("Player not found. Please try using the player tag.")
         return await ctx.send(f"Player: {player.name} ({player.tag})")
+
+
+def setup(bot):
+    bot.add_cog(General(bot))
