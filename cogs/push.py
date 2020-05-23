@@ -103,12 +103,14 @@ class Push(commands.Cog):
         max_trophies = fetch['max_trophies']
         max_gain = fetch['max_gain']
         if now < self.start_time:
-            delta = (now - self.start_time)
-            days =  delta.days
+            delta = (self.start_time - now)
+            print(delta)
+            days = delta.days
             hours, rem = divmod(delta.seconds, 3600)
             mins, rem = divmod(rem, 60)
+            print(days, hours, mins)
             time_field_name = "Start Time"
-            time_field_value = self.start_time.strftime("$d %b %Y %H:%M")
+            time_field_value = self.start_time.strftime("%d %b %Y %H:%M")
             if days > 0:
                 left_field_name = "Until Start"
                 left_field_value = f"{days} days, {hours} hours"
@@ -121,7 +123,7 @@ class Push(commands.Cog):
             hours, rem = divmod(delta.seconds, 3600)
             mins, rem = divmod(rem, 60)
             time_field_name = "End Time"
-            time_field_value = self.end_time.strftime("$d %b %Y %H:%M")
+            time_field_value = self.end_time.strftime("%d %b %Y %H:%M")
             if days > 0:
                 left_field_name = "Time Left"
                 left_field_value = f"{days} days, {hours} hours"
