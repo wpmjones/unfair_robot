@@ -7,7 +7,7 @@ from cogs.utils.cache import get_neighbors
 from cogs.utils.constants import clans
 from cogs.utils.converters import PlayerConverter, ClanConverter
 from cogs.utils import formats
-from datetime import datetime
+from datetime import datetime, timedelta
 from config import settings
 
 
@@ -15,7 +15,7 @@ class Push(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.title = "Unfair Warfare Trophy Push"
-        self.start_time = datetime(2020, 5, 25, 5, 0, 0)
+        self.start_time = datetime(2020, 5, 23, 15, 35, 0)
         self.end_time = datetime(2020, 5, 30, 0, 0, 0)
         self.update_push.start()
         self.push_start.start()
@@ -24,38 +24,40 @@ class Push(commands.Cog):
         self.update_push.cancel()
         self.push_start.cancel()
 
-    @tasks.loop(time=time(hour=15, minute=30))
+    @tasks.loop(minutes=5.0)
     async def push_start(self):
-        channel = await self.bot.get_channel(settings['channels']['log'])
-        msg = await channel.send("Starting push start...")
-        start = time.perf_counter()
-        player_list = []
-        async for clan in self.bot.coc.get_clans(clans):
-            for member in clan.itermembers:
-                player_list.append(member.tag)
-        to_insert = []
-        counter = 1
-        async for player in self.bot.coc.get_players(player_list):
-            to_insert.append((counter,
-                              player.tag[1:],
-                              player.name.replace("'", "''"),
-                              player.clan.tag[1:],
-                              player.clan.name,
-                              player.trophies if player.trophies <= 5000 else 5000,
-                              player.trophies if player.trophies <= 5000 else 5000,
-                              player.best_trophies,
-                              player.town_hall
-                              ))
-            counter += 1
-        conn = self.bot.pool
-        sql = ("INSERT INTO uw_push_1 (player_tag, player_name, clan_tag, clan_name, "
-               "starting_trophies, current_trophies, best_trophies, current_th_level) "
-               "SELECT x.player_tag, x.player_name, x.clan_tag, x.clan_name, x.starting_trophies, "
-               "x.current_trophies, x.best_trophies, x.current_th_level "
-               "FROM unnest($1::uw_push_1[]) as x")
-        await conn.execute(sql, to_insert)
-        await msg.delete()
-        await channel.send(f"Elapsed time: {(time.perf_counter() - start) / 60:.2f} minutes")
+        now = datetime.utcnow()
+        if self.start_time - timedelta(minutes=4) < now < self.start_time + timedelta(minutes=4):
+            channel = await self.bot.get_channel(settings['channels']['log'])
+            msg = await channel.send("Starting push start...")
+            start = time.perf_counter()
+            player_list = []
+            async for clan in self.bot.coc.get_clans(clans):
+                for member in clan.itermembers:
+                    player_list.append(member.tag)
+            to_insert = []
+            counter = 1
+            async for player in self.bot.coc.get_players(player_list):
+                to_insert.append((counter,
+                                  player.tag[1:],
+                                  player.name.replace("'", "''"),
+                                  player.clan.tag[1:],
+                                  player.clan.name,
+                                  player.trophies if player.trophies <= 5000 else 5000,
+                                  player.trophies if player.trophies <= 5000 else 5000,
+                                  player.best_trophies,
+                                  player.town_hall
+                                  ))
+                counter += 1
+            conn = self.bot.pool
+            sql = ("INSERT INTO uw_push_1 (player_tag, player_name, clan_tag, clan_name, "
+                   "starting_trophies, current_trophies, best_trophies, current_th_level) "
+                   "SELECT x.player_tag, x.player_name, x.clan_tag, x.clan_name, x.starting_trophies, "
+                   "x.current_trophies, x.best_trophies, x.current_th_level "
+                   "FROM unnest($1::uw_push_1[]) as x")
+            await conn.execute(sql, to_insert)
+            await msg.delete()
+            await channel.send(f"Elapsed time: {(time.perf_counter() - start) / 60:.2f} minutes")
 
     @tasks.loop(minutes=10.0)
     async def update_push(self):
