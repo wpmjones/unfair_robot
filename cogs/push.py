@@ -8,6 +8,7 @@ from cogs.utils.constants import clans
 from cogs.utils.converters import PlayerConverter, ClanConverter
 from cogs.utils import formats
 from datetime import datetime
+from config import settings
 
 
 class Push(commands.Cog):
@@ -17,13 +18,16 @@ class Push(commands.Cog):
         self.start_time = datetime(2020, 5, 25, 5, 0, 0)
         self.end_time = datetime(2020, 5, 30, 0, 0, 0)
         self.update_push.start()
+        self.push_start.start()
 
     def cog_unload(self):
         self.update_push.cancel()
+        self.push_start.cancel()
 
-    @tasks.loop()
-    async def push_start(self, ctx):
-        msg = await ctx.send("Starting process...")
+    @tasks.loop(time=time(hour=15, minute=17))
+    async def push_start(self):
+        channel = await self.bot.get_channel(settings['channels']['log'])
+        msg = await channel.send("Starting push start...")
         start = time.perf_counter()
         player_list = []
         async for clan in self.bot.coc.get_clans(clans):
@@ -51,7 +55,7 @@ class Push(commands.Cog):
                "FROM unnest($1::uw_push_1[]) as x")
         await conn.execute(sql, to_insert)
         await msg.delete()
-        await ctx.send(f"Elapsed time: {(time.perf_counter() - start) / 60:.2f} minutes")
+        await channel.send(f"Elapsed time: {(time.perf_counter() - start) / 60:.2f} minutes")
 
     @tasks.loop(minutes=10.0)
     async def update_push(self):
