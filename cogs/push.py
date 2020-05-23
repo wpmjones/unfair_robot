@@ -16,7 +16,7 @@ class Push(commands.Cog):
         self.bot = bot
         self.title = "Unfair Warfare Trophy Push"
         self.start_time = datetime(2020, 5, 25, 5, 0, 0)
-        self.end_time = datetime(2020, 6, 6, 5, 0, 0)
+        self.end_time = datetime(2020, 6, 29, 5, 0, 0)
         self.update_push.start()
         self.push_start.start()
 
