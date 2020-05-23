@@ -15,8 +15,8 @@ class Push(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.title = "Unfair Warfare Trophy Push"
-        self.start_time = datetime(2020, 5, 23, 15, 45, 0)
-        self.end_time = datetime(2020, 5, 30, 0, 0, 0)
+        self.start_time = datetime(2020, 5, 25, 5, 0, 0)
+        self.end_time = datetime(2020, 6, 6, 5, 0, 0)
         self.update_push.start()
         self.push_start.start()
 
@@ -27,10 +27,9 @@ class Push(commands.Cog):
     @tasks.loop(minutes=5.0)
     async def push_start(self):
         now = datetime.utcnow()
-        print(f"{self.start_time}\n{now}\n{self.end_time}")
         if self.start_time - timedelta(minutes=3) < now < self.start_time + timedelta(minutes=3):
-            channel = self.bot.get_channel(settings['channels']['log'])
-            msg = await channel.send("Starting push start...")
+            log_channel = self.bot.get_channel(settings['channels']['log'])
+            msg = await log_channel.send("Starting push start...")
             start = time.perf_counter()
             player_list = []
             async for clan in self.bot.coc.get_clans(clans):
@@ -58,7 +57,17 @@ class Push(commands.Cog):
                    "FROM unnest($1::uw_push_1[]) as x")
             await conn.execute(sql, to_insert)
             await msg.delete()
-            await channel.send(f"Elapsed time: {(time.perf_counter() - start) / 60:.2f} minutes")
+            await log_channel.send(f"Elapsed time: {(time.perf_counter() - start) / 60:.2f} minutes")
+            # Announce the start
+            embed = discord.Embed(title="UW Trophy Push has begun", color=discord.Color.green())
+            embed.add_field(name="Start Time", value="May 25 - 5am UTC", inline=True)
+            embed.add_field(name="End Time", value="June 6 - 5am UTC", inline=True)
+            embed.add_field(name="Time Left", value="10 days", inline=True)
+            embed.add_field(name="Clans", value=str(len(clans)), inline=True)
+            embed.add_field(name="Players", value=str(len(to_insert)), inline=True)
+            embed.set_thumbnail(url="http://www.mayodev.com/images/trophy2.png")
+            bot_channel = self.bot.get_channel(settings['channels']['uw_bot'])
+            await bot_channel.send()
 
     @tasks.loop(minutes=10.0)
     async def update_push(self):
@@ -119,7 +128,7 @@ class Push(commands.Cog):
             else:
                 left_field_name = "Time Left"
                 left_field_value = f"{hours} hours, {mins} minutes"
-        embed = discord.Embed(title="UW Trophy Push Stats", color=discord.Color.dark_red())
+        embed = discord.Embed(title="UW Trophy Push Stats", color=discord.Color.blurple())
         embed.add_field(name="Clans", value=str(clan_count), inline=True)
         embed.add_field(name="Players", value=str(player_count), inline=True)
         embed.add_field(name=time_field_name, value=time_field_value, inline=True)
