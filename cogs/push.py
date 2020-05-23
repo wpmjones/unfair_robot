@@ -24,7 +24,7 @@ class Push(commands.Cog):
         self.update_push.cancel()
         self.push_start.cancel()
 
-    @tasks.loop(time=time(hour=15, minute=17))
+    @tasks.loop(time=time(hour=15, minute=30))
     async def push_start(self):
         channel = await self.bot.get_channel(settings['channels']['log'])
         msg = await channel.send("Starting push start...")
@@ -90,21 +90,39 @@ class Push(commands.Cog):
         clan_count = len(clans)
         max_trophies = fetch['max_trophies']
         max_gain = fetch['max_gain']
-        delta = (self.end_time - now)
-        days = delta.days
-        hours, rem = divmod(delta.seconds, 3600)
-        mins, rem = divmod(rem, 60)
-        if days > 0:
-            time_left = f"{days} days, {hours} hours"
+        if now < self.start_time:
+            delta = (now - self.start_time)
+            days =  delta.days
+            hours, rem = divmod(delta.seconds, 3600)
+            mins, rem = divmod(rem, 60)
+            time_field_name = "Start Time"
+            time_field_value = self.start_time.strftime("$d %b %Y %H:%M")
+            if days > 0:
+                left_field_name = "Until Start"
+                left_field_value = f"{days} days, {hours} hours"
+            else:
+                left_field_name = "Until Start"
+                left_field_value = f"{hours} hours, {mins} minutes"
         else:
-            time_left = f"{hours} hours, {mins} minutes"
+            delta = (self.end_time - now)
+            days = delta.days
+            hours, rem = divmod(delta.seconds, 3600)
+            mins, rem = divmod(rem, 60)
+            time_field_name = "End Time"
+            time_field_value = self.end_time.strftime("$d %b %Y %H:%M")
+            if days > 0:
+                left_field_name = "Time Left"
+                left_field_value = f"{days} days, {hours} hours"
+            else:
+                left_field_name = "Time Left"
+                left_field_value = f"{hours} hours, {mins} minutes"
         embed = discord.Embed(title="UW Trophy Push Stats", color=discord.Color.dark_red())
         embed.add_field(name="Clans", value=str(clan_count), inline=True)
         embed.add_field(name="Players", value=str(player_count), inline=True)
-        embed.add_field(name="End Time", value=self.end_time.strftime("%d %b %Y %H:%M"), inline=True)
+        embed.add_field(name=time_field_name, value=time_field_value, inline=True)
         embed.add_field(name="Highest Trophies", value=str(max_trophies), inline=True)
         embed.add_field(name="Biggest Gain", value=str(max_gain), inline=True)
-        embed.add_field(name="Time Left", value=time_left, inline=True)
+        embed.add_field(name=left_field_name, value=left_field_value, inline=True)
         embed.set_thumbnail(url="http://www.mayodev.com/images/trophy2.png")
         await ctx.send(embed=embed)
 
