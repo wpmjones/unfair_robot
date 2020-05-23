@@ -9,14 +9,7 @@ def get_render_type(table, type_):
         "push all": (table.board_1, "Points"),
         "push diff": (table.board_1, "Diff"),
         "push top": (table.board_1, "Points"),
-        "push th": (table.board_5, "Cups", "Pts"),
-        "push th13": (table.board_5, "Cups", "Pts"),
-        "push th12": (table.board_5, "Cups", "Pts"),
-        "push th11": (table.board_5, "Cups", "Pts"),
-        "push th10": (table.board_5, "Cups", "Pts"),
-        "push th9": (table.board_5, "Cups", "Pts"),
-        "push th8": (table.board_5, "Cups", "Pts"),
-        "push th7": (table.board_5, "Cups", "Pts"),
+        "push player": (table.board_2, "Points"),
         "push gain": (table.board_1, "Gain"),
         "push clan": (table.board_1, "Points"),
     }
@@ -130,12 +123,12 @@ class CLYTable:
             fmt += f"{index}`⠀{str(v[1]):\u00A0>6.6}⠀` `⠀{str(v[2]):\u00A0>22.22}⠀`\n"
         return fmt
 
-    def board_2(self, category_1, category_2):
-        fmt = f"{emojis['other']['num']}`⠀{category_1:\u00A0>6.6}⠀` `⠀{category_2:\u00A0>5.5}⠀` `⠀{'Name':\u00A0>16.16}⠀`\n"
+    def board_2(self, category):
+        fmt = f"{emojis['other']['num']}`⠀{category:\u00A0>6.6}⠀` `⠀{'Name':\u00A0>22.22}⠀`\n"
         for v in self._rows:
-            index = int(v[0]) + 1
+            index = int(v[0]) - 5
             index = emojis['level'][index]  # if index <= 100 else misc['idle']
-            fmt += f"{index}`⠀{str(v[1]):\u00A0>6.6}⠀` `⠀{str(v[2]):\u00A0>5.5}⠀` `⠀{str(v[3]):\u00A0>16.16}⠀`\n"
+            fmt += f"{index}`⠀{str(v[1]):\u00A0>6.6}⠀` `⠀{str(v[2]):\u00A0>22.22}⠀`\n"
         return fmt
 
     def board_3(self):
@@ -244,7 +237,6 @@ class TopTenPaginator(TablePaginator):
         super().__init__(ctx, data, title=None, page_count=1, rows_per_table=20)
         self.data = data
         self.title = "Trophy Push Top Twenty"
-        # self.th_by_page = {1: 13, 2: 12, 3: 11, 4: 10, 5: 9, 6: 8, 7: 7}
 
     def create_row(self, data):
         row = [data[0], data[1][0], data[1][1]]

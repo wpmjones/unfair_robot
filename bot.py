@@ -13,7 +13,7 @@ from datetime import datetime
 from loguru import logger
 from config import settings
 
-enviro = "home"
+enviro = "LIVE"
 
 initial_extensions = ["cogs.general",
                       "cogs.admin",
@@ -22,11 +22,11 @@ initial_extensions = ["cogs.general",
 
 if enviro == "LIVE":
     token = settings['discord']['token']
-    prefix = "/"
+    prefix = "+"
     log_level = "INFO"
     coc_names = "uw"
 elif enviro == "home":
-    token = settings['discord']['token']
+    token = settings['discord']['testing']
     prefix = ">"
     log_level = "DEBUG"
     coc_names = "ubuntu"
@@ -36,11 +36,9 @@ else:
     log_level = "DEBUG"
     coc_names = "dev"
 
-description = ("Unfair Robot welcomes you to his laboratory."
-               ""
-               "All commands must begin with a slash."
-               ""
-               "Proudly maintained by TubaKid")
+description = ("Unfair Robot welcomes you to his laboratory.\n"
+               "All commands must begin with a plus.\n"
+               "Proudly maintained by TubaKid.\n\n")
 
 
 class CustomClient(coc.EventsClient):

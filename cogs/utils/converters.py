@@ -15,8 +15,8 @@ class PlayerConverter(commands.Converter):
 
         tag = coc.utils.correct_tag(argument)
         name = argument.strip().lower()
-        print(name)
         data = await get_data()
+        player_names = [p['player_name'].lower() for p in data]
 
         if tag_validator.match(argument):
             try:
@@ -31,10 +31,17 @@ class PlayerConverter(commands.Converter):
                                            "find an account with that tag! "
                                            "If you didn't pass in a tag, "
                                            "please drop the owner a message.")
-        print("past tag")
+        # if player_names.count(name) > 1:
+        #     indices = [i for i, x in enumerate(data) if x['player_name'].lower() == name]
+        #     print(indices)
+        #     prompt_text = f"Please select the appropriate {argument}:\n"
+        #     for index in indices:
+        #         prompt_text += f"{data[index]['player_name']} ({data[index]['player_tag']})\n"
+        #     prompt = await ctx.prompt(prompt_text, additional_options=player_names.count(name))
+        #     print(f"#{data[indices[prompt-1]]['player_tag']}")
+        #     return await ctx.coc.get_player(f"#{data[indices[prompt-1]]['player_tag']}")
         for row in data:
             if row['player_name'].lower() == name:
-                print(f"#{row['player_tag']}")
                 return await ctx.coc.get_player(f"#{row['player_tag']}")
         raise commands.BadArgument("Invalid tag or in-game name.")
 
