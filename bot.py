@@ -65,6 +65,7 @@ class Robot(commands.Bot):
                          case_insensitive=True)
         self.coc = coc_client
         self.logger = logger
+        self.color = discord.Color.dark_red()
         self.loop.create_task(self.after_ready())
 
         for extension in initial_extensions:
