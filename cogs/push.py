@@ -15,7 +15,7 @@ class Push(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.title = "Unfair Warfare Trophy Push"
-        self.start_time = datetime(2020, 5, 23, 15, 35, 0)
+        self.start_time = datetime(2020, 5, 23, 15, 45, 0)
         self.end_time = datetime(2020, 5, 30, 0, 0, 0)
         self.update_push.start()
         self.push_start.start()
@@ -27,8 +27,9 @@ class Push(commands.Cog):
     @tasks.loop(minutes=5.0)
     async def push_start(self):
         now = datetime.utcnow()
-        if self.start_time - timedelta(minutes=4) < now < self.start_time + timedelta(minutes=4):
-            channel = await self.bot.get_channel(settings['channels']['log'])
+        print(f"{self.start_time}\n{now}\n{self.end_time}")
+        if self.start_time - timedelta(minutes=3) < now < self.start_time + timedelta(minutes=3):
+            channel = self.bot.get_channel(settings['channels']['log'])
             msg = await channel.send("Starting push start...")
             start = time.perf_counter()
             player_list = []
