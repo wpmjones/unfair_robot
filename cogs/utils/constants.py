@@ -19,4 +19,6 @@ clans = {
     "#2LPVGU09",
     "#U8R8OVUR",
     "#8VQCC2YP",
+    "#8PYYLCV",
+    "#GCPPGY8",
 }
