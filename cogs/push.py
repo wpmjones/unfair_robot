@@ -24,12 +24,33 @@ class Push(commands.Cog):
         self.update_push.cancel()
         # self.push_start.cancel()
 
-    @tasks.loop(minutes=5.0)
-    async def push_start(self):
+    @tasks.loop(minutes=10.0)
+    async def update_push(self):
+        """Update trophy count and TH level"""
         now = datetime.utcnow()
-        if self.start_time - timedelta(minutes=3) < now < self.start_time + timedelta(minutes=3):
-            log_channel = self.bot.get_channel(settings['channels']['log'])
-            msg = await log_channel.send("Starting push start...")
+        if self.start_time < now < self.end_time:
+            conn = self.bot.pool
+            sql = "SELECT player_tag FROM uw_push_1"
+            fetch = await conn.fetch(sql)
+            player_list = ["#" + x['player_tag'] for x in fetch]
+            sql = "UPDATE uw_push_1 SET current_trophies = $1, current_th_level = $2 WHERE player_tag = $3"
+            async for player in self.bot.coc.get_players(player_list):
+                await conn.execute(sql, player.trophies, player.town_hall, player.tag[1:])
+
+    @commands.group(name="push",  invoke_without_command=True)
+    async def push(self, ctx):
+        """Use `+help push` for details on using this category"""
+        if ctx.invoked_subcommand is not None:
+            return
+
+        await ctx.invoke(self.push_info)
+
+    @push.command(name="start", hidden=True)
+    @commands.is_owner()
+    async def push_start(self, ctx):
+        now = datetime.utcnow()
+        if self.start_time - timedelta(minutes=3) < now < self.start_time + timedelta(minutes=30):
+            msg = await ctx.send("Starting push start...")
             start = time.perf_counter()
             player_list = []
             async for clan in self.bot.coc.get_clans(clans):
@@ -57,38 +78,17 @@ class Push(commands.Cog):
                    "FROM unnest($1::uw_push_1[]) as x")
             await conn.execute(sql, to_insert)
             await msg.delete()
-            await log_channel.send(f"Elapsed time: {(time.perf_counter() - start) / 60:.2f} minutes")
-            # Announce the start
-            embed = discord.Embed(title="UW Trophy Push has begun", color=discord.Color.green())
-            embed.add_field(name="Start Time", value="May 25 - 5am UTC", inline=True)
-            embed.add_field(name="End Time", value="June 6 - 5am UTC", inline=True)
-            embed.add_field(name="Time Left", value="10 days", inline=True)
-            embed.add_field(name="Clans", value=str(len(clans)), inline=True)
-            embed.add_field(name="Players", value=str(len(to_insert)), inline=True)
-            embed.set_thumbnail(url="http://www.mayodev.com/images/trophy2.png")
-            bot_channel = self.bot.get_channel(settings['channels']['uw_bot'])
-            await bot_channel.send()
-
-    @tasks.loop(minutes=10.0)
-    async def update_push(self):
-        """Update trophy count and TH level"""
-        now = datetime.utcnow()
-        if self.start_time < now < self.end_time:
-            conn = self.bot.pool
-            sql = "SELECT player_tag FROM uw_push_1"
-            fetch = await conn.fetch(sql)
-            player_list = ["#" + x['player_tag'] for x in fetch]
-            sql = "UPDATE uw_push_1 SET current_trophies = $1, current_th_level = $2 WHERE player_tag = $3"
-            async for player in self.bot.coc.get_players(player_list):
-                await conn.execute(sql, player.trophies, player.town_hall, player.tag[1:])
-
-    @commands.group(name="push",  invoke_without_command=True)
-    async def push(self, ctx):
-        """Use `+help push` for details on using this category"""
-        if ctx.invoked_subcommand is not None:
-            return
-
-        await ctx.invoke(self.push_info)
+            await ctx.send(f"Elapsed time: {(time.perf_counter() - start) / 60:.2f} minutes")
+            # # Announce the start
+            # embed = discord.Embed(title="UW Trophy Push has begun", color=discord.Color.green())
+            # embed.add_field(name="Start Time", value="May 25 - 5am UTC", inline=True)
+            # embed.add_field(name="End Time", value="June 6 - 5am UTC", inline=True)
+            # embed.add_field(name="Time Left", value="10 days", inline=True)
+            # embed.add_field(name="Clans", value=str(len(clans)), inline=True)
+            # embed.add_field(name="Players", value=str(len(to_insert)), inline=True)
+            # embed.set_thumbnail(url="http://www.mayodev.com/images/trophy2.png")
+            # bot_channel = self.bot.get_channel(settings['channels']['uw_bot'])
+            # await bot_channel.send()
 
     @push.command(name="info")
     async def push_info(self, ctx):

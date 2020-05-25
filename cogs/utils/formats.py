@@ -12,6 +12,7 @@ def get_render_type(table, type_):
         "push player": (table.board_2, "Points"),
         "push gain": (table.board_1, "Gain"),
         "push clan": (table.board_1, "Points"),
+        "push clans": (table.board_1, "Sum"),
     }
     func, *args = board_choice.get(type_, (table.board_1, "Err"))
 
