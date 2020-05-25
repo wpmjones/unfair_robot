@@ -223,7 +223,9 @@ class Admin(commands.Cog):
         if stderr:
             return await ctx.send(stderr)
         else:
-            await ctx.send(stdout)
+            modules = self.find_modules_from_git(stdout)
+            mods_text = '\n'.join(f'{index}. `{module}`' for index, (_, module) in enumerate(modules, start=1))
+            await ctx.send(f"The following files were pull from GitHub:\n{mods_text}")
 
     @commands.command(pass_context=True, hidden=True, name='eval')
     async def _eval(self, ctx, *, body: str):
