@@ -216,6 +216,15 @@ class Admin(commands.Cog):
 
         await ctx.send('\n'.join(f'{status}: `{module}`' for status, module in statuses))
 
+    @commands.command(name="pull", hidden="true")
+    async def git_pull(self, ctx):
+        async with ctx.typing():
+            stdout, stderr = await self.run_process("git pull")
+        if stderr:
+            return await ctx.send(stderr)
+        else:
+            await ctx.send(stdout)
+
     @commands.command(pass_context=True, hidden=True, name='eval')
     async def _eval(self, ctx, *, body: str):
         """Evaluates a code"""
