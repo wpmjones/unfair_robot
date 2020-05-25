@@ -18,11 +18,11 @@ class Push(commands.Cog):
         self.start_time = datetime(2020, 5, 25, 5, 0, 0)
         self.end_time = datetime(2020, 6, 29, 5, 0, 0)
         self.update_push.start()
-        self.push_start.start()
+        # self.push_start.start()
 
     def cog_unload(self):
         self.update_push.cancel()
-        self.push_start.cancel()
+        # self.push_start.cancel()
 
     @tasks.loop(minutes=5.0)
     async def push_start(self):
