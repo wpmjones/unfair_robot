@@ -222,6 +222,8 @@ class Admin(commands.Cog):
             stdout, stderr = await self.run_process("git pull")
         if stderr:
             return await ctx.send(stderr)
+        if stdout.startswith("Already up-to-date."):
+            return await ctx.send(stdout)
         else:
             modules = self.find_modules_from_git(stdout)
             mods_text = '\n'.join(f'{index}. `{module}`' for index, (_, module) in enumerate(modules, start=1))
