@@ -137,6 +137,7 @@ class Push(commands.Cog):
         embed.add_field(name="Highest Trophies", value=str(max_trophies), inline=True)
         embed.add_field(name="Biggest Gain", value=str(max_gain), inline=True)
         embed.add_field(name=left_field_name, value=left_field_value, inline=True)
+        embed.add_field(name="Point Structure", value="TH13 -5000\nTH12 -4000\nTH11 -3500\nTH10 -3000", inline=False)
         embed.set_thumbnail(url="http://www.mayodev.com/images/trophy2.png")
         await ctx.send(embed=embed)
 
