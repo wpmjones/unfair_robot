@@ -40,6 +40,8 @@ class Push(commands.Cog):
             async for clan in self.bot.coc.get_clans(clans):
                 for member in clan.itermembers:
                     if member.tag not in player_list:
+                        channel = self.bot.get_channel(711990350071332906)
+                        await channel.send(f"Adding {member.name} to {member.clan}.")
                         new_player_list.append(member.tag)
             to_insert = []
             async for player in self.bot.coc.get_players(player_list):
