@@ -44,7 +44,7 @@ class Push(commands.Cog):
                         await channel.send(f"Adding {member.name} to {member.clan}.")
                         new_player_list.append(member.tag)
             to_insert = []
-            async for player in self.bot.coc.get_players(player_list):
+            async for player in self.bot.coc.get_players(new_player_list):
                 to_insert.append((player.tag[1:],
                                   player.name.replace("'", "''"),
                                   player.clan.tag[1:],
