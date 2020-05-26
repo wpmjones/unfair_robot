@@ -1,6 +1,7 @@
 import discord
 import math
 import time
+import traceback
 
 from discord.ext import commands, tasks
 from cogs.utils.cache import get_neighbors
@@ -27,9 +28,11 @@ class Push(commands.Cog):
     @tasks.loop(minutes=10.0)
     async def update_push(self):
         """Update trophy count and TH level"""
+        print("Starting update")
         now = datetime.utcnow()
         if self.start_time < now < self.end_time:
             conn = self.bot.pool
+            channel = self.bot.get_channel(711990350071332906)
             sql = "SELECT player_tag FROM uw_push_1"
             fetch = await conn.fetch(sql)
             player_list = ["#" + x['player_tag'] for x in fetch]
@@ -40,12 +43,15 @@ class Push(commands.Cog):
             async for clan in self.bot.coc.get_clans(clans):
                 for member in clan.itermembers:
                     if member.tag not in player_list:
-                        channel = self.bot.get_channel(711990350071332906)
-                        await channel.send(f"Adding {member.name} to {member.clan}.")
+                        # await channel.send(f"Adding {member.name} to {member.clan}.")
                         new_player_list.append(member.tag)
+            print(new_player_list)
             to_insert = []
+            counter = 1
             async for player in self.bot.coc.get_players(new_player_list):
-                to_insert.append((player.tag[1:],
+                print(player.name)
+                to_insert.append((counter,
+                                  player.tag[1:],
                                   player.name.replace("'", "''"),
                                   player.clan.tag[1:],
                                   player.clan.name,
@@ -54,6 +60,8 @@ class Push(commands.Cog):
                                   player.best_trophies,
                                   player.town_hall
                                   ))
+                counter += 1
+            print(len(to_insert))
             sql = ("INSERT INTO uw_push_1 (player_tag, player_name, clan_tag, clan_name, "
                    "starting_trophies, current_trophies, best_trophies, current_th_level) "
                    "SELECT x.player_tag, x.player_name, x.clan_tag, x.clan_name, x.starting_trophies, "
