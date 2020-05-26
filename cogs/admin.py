@@ -229,6 +229,15 @@ class Admin(commands.Cog):
             mods_text = '\n'.join(f'{index}. `{module}`' for index, (_, module) in enumerate(modules, start=1))
             await ctx.send(f"The following files were pull from GitHub:\n{mods_text}")
 
+    @commands.command(name="clear", hidden=True)
+    @commands.is_owner()
+    async def clear(self, ctx, msg_count: int = None):
+        if msg_count:
+            await ctx.channel.purge(limit=msg_count + 1)
+        else:
+            async for message in ctx.channel.history():
+                await message.delete()
+
     @commands.command(pass_context=True, hidden=True, name='eval')
     async def _eval(self, ctx, *, body: str):
         """Evaluates a code"""

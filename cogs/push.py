@@ -54,7 +54,6 @@ class Push(commands.Cog):
                                   player.best_trophies,
                                   player.town_hall
                                   ))
-            conn = self.bot.pool
             sql = ("INSERT INTO uw_push_1 (player_tag, player_name, clan_tag, clan_name, "
                    "starting_trophies, current_trophies, best_trophies, current_th_level) "
                    "SELECT x.player_tag, x.player_name, x.clan_tag, x.clan_name, x.starting_trophies, "
