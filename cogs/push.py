@@ -36,6 +36,29 @@ class Push(commands.Cog):
             sql = "UPDATE uw_push_1 SET current_trophies = $1, current_th_level = $2 WHERE player_tag = $3"
             async for player in self.bot.coc.get_players(player_list):
                 await conn.execute(sql, player.trophies, player.town_hall, player.tag[1:])
+            new_player_list = []
+            async for clan in self.bot.coc.get_clans(clans):
+                for member in clan.itermembers:
+                    if member.tag not in player_list:
+                        new_player_list.append(member.tag)
+            to_insert = []
+            async for player in self.bot.coc.get_players(player_list):
+                to_insert.append((player.tag[1:],
+                                  player.name.replace("'", "''"),
+                                  player.clan.tag[1:],
+                                  player.clan.name,
+                                  player.trophies if player.trophies <= 5000 else 5000,
+                                  player.trophies if player.trophies <= 5000 else 5000,
+                                  player.best_trophies,
+                                  player.town_hall
+                                  ))
+            conn = self.bot.pool
+            sql = ("INSERT INTO uw_push_1 (player_tag, player_name, clan_tag, clan_name, "
+                   "starting_trophies, current_trophies, best_trophies, current_th_level) "
+                   "SELECT x.player_tag, x.player_name, x.clan_tag, x.clan_name, x.starting_trophies, "
+                   "x.current_trophies, x.best_trophies, x.current_th_level "
+                   "FROM unnest($1::uw_push_1[]) as x")
+            await conn.execute(sql, to_insert)
 
     @commands.group(name="push",  invoke_without_command=True)
     async def push(self, ctx):
