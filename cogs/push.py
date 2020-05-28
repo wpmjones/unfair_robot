@@ -28,28 +28,23 @@ class Push(commands.Cog):
     @tasks.loop(minutes=10.0)
     async def update_push(self):
         """Update trophy count and TH level"""
-        print("Starting update")
         now = datetime.utcnow()
         if self.start_time < now < self.end_time:
             conn = self.bot.pool
-            channel = self.bot.get_channel(711990350071332906)
             sql = "SELECT player_tag FROM uw_push_1"
             fetch = await conn.fetch(sql)
             player_list = ["#" + x['player_tag'] for x in fetch]
-            sql = "UPDATE uw_push_1 SET current_trophies = $1, current_th_level = $2 WHERE player_tag = $3"
+            sql = "UPDATE uw_push_1 SET current_trophies = $1, th_level = $2 WHERE player_tag = $3"
             async for player in self.bot.coc.get_players(player_list):
                 await conn.execute(sql, player.trophies, player.town_hall, player.tag[1:])
             new_player_list = []
             async for clan in self.bot.coc.get_clans(clans):
                 for member in clan.itermembers:
                     if member.tag not in player_list:
-                        # await channel.send(f"Adding {member.name} to {member.clan}.")
                         new_player_list.append(member.tag)
-            print(new_player_list)
             to_insert = []
             counter = 1
             async for player in self.bot.coc.get_players(new_player_list):
-                print(player.name)
                 to_insert.append((counter,
                                   player.tag[1:],
                                   player.name.replace("'", "''"),
@@ -61,11 +56,10 @@ class Push(commands.Cog):
                                   player.town_hall
                                   ))
                 counter += 1
-            print(len(to_insert))
             sql = ("INSERT INTO uw_push_1 (player_tag, player_name, clan_tag, clan_name, "
-                   "starting_trophies, current_trophies, best_trophies, current_th_level) "
+                   "starting_trophies, current_trophies, best_trophies, th_level) "
                    "SELECT x.player_tag, x.player_name, x.clan_tag, x.clan_name, x.starting_trophies, "
-                   "x.current_trophies, x.best_trophies, x.current_th_level "
+                   "x.current_trophies, x.best_trophies, x.th_level "
                    "FROM unnest($1::uw_push_1[]) as x")
             await conn.execute(sql, to_insert)
 
@@ -81,46 +75,46 @@ class Push(commands.Cog):
     @commands.is_owner()
     async def push_start(self, ctx):
         now = datetime.utcnow()
-        if self.start_time - timedelta(minutes=3) < now < self.start_time + timedelta(minutes=30):
-            msg = await ctx.send("Starting push start...")
-            start = time.perf_counter()
-            player_list = []
-            async for clan in self.bot.coc.get_clans(clans):
-                for member in clan.itermembers:
-                    player_list.append(member.tag)
-            to_insert = []
-            counter = 1
-            async for player in self.bot.coc.get_players(player_list):
-                to_insert.append((counter,
-                                  player.tag[1:],
-                                  player.name.replace("'", "''"),
-                                  player.clan.tag[1:],
-                                  player.clan.name,
-                                  player.trophies if player.trophies <= 5000 else 5000,
-                                  player.trophies if player.trophies <= 5000 else 5000,
-                                  player.best_trophies,
-                                  player.town_hall
-                                  ))
-                counter += 1
-            conn = self.bot.pool
-            sql = ("INSERT INTO uw_push_1 (player_tag, player_name, clan_tag, clan_name, "
-                   "starting_trophies, current_trophies, best_trophies, current_th_level) "
-                   "SELECT x.player_tag, x.player_name, x.clan_tag, x.clan_name, x.starting_trophies, "
-                   "x.current_trophies, x.best_trophies, x.current_th_level "
-                   "FROM unnest($1::uw_push_1[]) as x")
-            await conn.execute(sql, to_insert)
-            await msg.delete()
-            await ctx.send(f"Elapsed time: {(time.perf_counter() - start) / 60:.2f} minutes")
-            # # Announce the start
-            # embed = discord.Embed(title="UW Trophy Push has begun", color=discord.Color.green())
-            # embed.add_field(name="Start Time", value="May 25 - 5am UTC", inline=True)
-            # embed.add_field(name="End Time", value="June 6 - 5am UTC", inline=True)
-            # embed.add_field(name="Time Left", value="10 days", inline=True)
-            # embed.add_field(name="Clans", value=str(len(clans)), inline=True)
-            # embed.add_field(name="Players", value=str(len(to_insert)), inline=True)
-            # embed.set_thumbnail(url="http://www.mayodev.com/images/trophy2.png")
-            # bot_channel = self.bot.get_channel(settings['channels']['uw_bot'])
-            # await bot_channel.send()
+        # if self.start_time - timedelta(minutes=3) < now < self.start_time + timedelta(minutes=30):
+        msg = await ctx.send("Starting push start...")
+        start = time.perf_counter()
+        player_list = []
+        async for clan in self.bot.coc.get_clans(clans):
+            for member in clan.itermembers:
+                player_list.append(member.tag)
+        to_insert = []
+        counter = 1
+        async for player in self.bot.coc.get_players(player_list):
+            to_insert.append((counter,
+                              player.tag[1:],
+                              player.name.replace("'", "''"),
+                              player.clan.tag[1:],
+                              player.clan.name,
+                              player.trophies if player.trophies <= 5000 else 5000,
+                              player.trophies if player.trophies <= 5000 else 5000,
+                              player.best_trophies,
+                              player.town_hall
+                              ))
+            counter += 1
+        conn = self.bot.pool
+        sql = ("INSERT INTO uw_push_1 (player_tag, player_name, clan_tag, clan_name, "
+               "starting_trophies, current_trophies, best_trophies, th_level) "
+               "SELECT x.player_tag, x.player_name, x.clan_tag, x.clan_name, x.starting_trophies, "
+               "x.current_trophies, x.best_trophies, x.th_level "
+               "FROM unnest($1::uw_push_1[]) as x")
+        await conn.execute(sql, to_insert)
+        await msg.delete()
+        await ctx.send(f"Elapsed time: {(time.perf_counter() - start) / 60:.2f} minutes")
+        # # Announce the start
+        # embed = discord.Embed(title="UW Trophy Push has begun", color=discord.Color.green())
+        # embed.add_field(name="Start Time", value="May 25 - 5am UTC", inline=True)
+        # embed.add_field(name="End Time", value="June 6 - 5am UTC", inline=True)
+        # embed.add_field(name="Time Left", value="10 days", inline=True)
+        # embed.add_field(name="Clans", value=str(len(clans)), inline=True)
+        # embed.add_field(name="Players", value=str(len(to_insert)), inline=True)
+        # embed.set_thumbnail(url="http://www.mayodev.com/images/trophy2.png")
+        # bot_channel = self.bot.get_channel(settings['channels']['uw_bot'])
+        # await bot_channel.send()
 
     @push.command(name="info")
     async def push_info(self, ctx):
@@ -167,7 +161,7 @@ class Push(commands.Cog):
         embed.add_field(name="Players", value=str(player_count), inline=True)
         embed.add_field(name=time_field_name, value=time_field_value, inline=True)
         embed.add_field(name="Highest Trophies", value=str(max_trophies), inline=True)
-        embed.add_field(name="Biggest Gain", value=str(max_gain), inline=True)
+        # embed.add_field(name="Biggest Gain", value=str(max_gain), inline=True)
         embed.add_field(name=left_field_name, value=left_field_value, inline=True)
         embed.add_field(name="Point Structure", value="TH13 -5000\nTH12 -4000\nTH11 -3500\nTH10 -3000", inline=False)
         embed.set_thumbnail(url="http://www.mayodev.com/images/trophy2.png")
@@ -178,16 +172,16 @@ class Push(commands.Cog):
         """Returns the top 20 players"""
         conn = self.bot.pool
         sql = ("SELECT "
-               "CASE current_th_level "
+               "CASE th_level "
                "WHEN 13 THEN current_trophies - 5000 "
                "WHEN 12 THEN current_trophies - 4000 "
                "WHEN 11 THEN current_trophies - 3500 "
                "WHEN 10 THEN current_trophies - 3000 "
                "ELSE 1 "
                "END AS score, "
-               "player_name, current_th_level "
+               "player_name, th_level "
                "FROM uw_push_1 "
-               "WHERE current_th_level > 9 "
+               "WHERE th_level > 9 "
                "ORDER BY score DESC")
         fetch = await conn.fetch(sql)
         ctx.icon = "https://cdn.discordapp.com/emojis/635642869738111016.png"
@@ -199,16 +193,16 @@ class Push(commands.Cog):
         """Return all players"""
         conn = self.bot.pool
         sql = ("SELECT "
-               "CASE current_th_level "
+               "CASE th_level "
                "WHEN 13 THEN current_trophies - 5000 "
                "WHEN 12 THEN current_trophies - 4000 "
                "WHEN 11 THEN current_trophies - 3500 "
                "WHEN 10 THEN current_trophies - 3000 "
                "ELSE 1 "
                "END AS score, "
-               "player_name, current_th_level "
+               "player_name, th_level "
                "FROM uw_push_1 "
-               "WHERE current_th_level > 9 "
+               "WHERE th_level > 9 "
                "ORDER BY score DESC")
         fetch = await conn.fetch(sql)
         ctx.icon = "https://cdn.discordapp.com/emojis/635642869738111016.png"
@@ -222,8 +216,8 @@ class Push(commands.Cog):
         with the same name, it is best to use the tag.
 
         Examples:
-        /push player Ristey
-        /push p #8GQPJG2CL"""
+        +push player Ristey
+        +push p #8GQPJG2CL"""
         if not player:
             return await ctx.send("Please provide a player name or a player tag")
         fetch = await get_neighbors(player.tag)
@@ -238,8 +232,8 @@ class Push(commands.Cog):
         with the same name, it is best to use the tag.
 
         Examples:
-        /push clan Unfair Warfare
-        /push c AphelionESPORTS"""
+        +push clan Unfair Warfare
+        +push c AphelionESPORTS"""
         if not clan:
             return await ctx.send("Please provide a clan name or clan tag")
         conn = self.bot.pool

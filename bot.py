@@ -13,7 +13,7 @@ from datetime import datetime
 from loguru import logger
 from config import settings
 
-enviro = "LIVE"
+enviro = "home"
 
 initial_extensions = ["cogs.general",
                       "cogs.admin",
@@ -26,9 +26,9 @@ if enviro == "LIVE":
     log_level = "INFO"
     coc_names = "uw"
 elif enviro == "home":
-    token = settings['discord']['testing']
-    prefix = ">"
-    log_level = "DEBUG"
+    token = settings['discord']['token']
+    prefix = "+"
+    log_level = "INFO"
     coc_names = "ubuntu"
 else:
     token = settings['discord']['testing']
@@ -131,10 +131,8 @@ class Robot(commands.Bot):
             pass
 
     async def on_ready(self):
-        logger.info("Calculating unfairness level...")
         activity = discord.Game(" with your mind")
         await bot.change_presence(activity=activity)
-        self.logger.info(f'Ready: {self.user} (ID: {self.user.id})')
 
     async def after_ready(self):
         await self.wait_until_ready()
@@ -148,7 +146,7 @@ class Robot(commands.Bot):
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     try:
-        pool = loop.run_until_complete(Table.create_pool(settings['pg']['uri'], max_size=15))
+        pool = loop.run_until_complete(Table.create_pool(settings['pg']['uri_home'], max_size=15))
         bot = Robot()
         bot.pool = pool
         bot.repo = git.Repo(os.getcwd())
