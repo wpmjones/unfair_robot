@@ -54,7 +54,7 @@ coc_client = coc.login(settings['cocpy']['user'],
                        client=CustomClient,
                        key_names=coc_names,
                        key_count=4,
-                       throttle_limit=35,
+                       throttle_limit=30,
                        correct_tags=True)
 
 
