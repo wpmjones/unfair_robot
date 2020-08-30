@@ -1,8 +1,6 @@
 import asyncio
 import coc
 import discord
-import git
-import os
 import sys
 import traceback
 
@@ -13,11 +11,11 @@ from datetime import datetime
 from loguru import logger
 from config import settings
 
-enviro = "home"
+enviro = "LIVE"
 
 initial_extensions = ["cogs.general",
                       "cogs.admin",
-                      "cogs.push",
+                      "cogs.games",
                       ]
 
 if enviro == "LIVE":
@@ -26,8 +24,8 @@ if enviro == "LIVE":
     log_level = "INFO"
     coc_names = "uw"
 elif enviro == "home":
-    token = settings['discord']['token']
-    prefix = "+"
+    token = settings['discord']['testing']
+    prefix = ">"
     log_level = "INFO"
     coc_names = "ubuntu"
 else:
@@ -41,20 +39,12 @@ description = ("Unfair Robot welcomes you to his laboratory.\n"
                "Proudly maintained by TubaKid.\n\n")
 
 
-class CustomClient(coc.EventsClient):
-    def _create_status_tasks(self, cached_war, war):
-        if cached_war.state != war.state:
-            self.dispatch("on_war_state_change", war.state, war)
-
-        super()._create_status_tasks(cached_war, war)
-
-
 coc_client = coc.login(settings['cocpy']['user'],
                        settings['cocpy']['pass'],
-                       client=CustomClient,
+                       client=coc.EventsClient,
                        key_names=coc_names,
                        key_count=4,
-                       throttle_limit=30,
+                       throttle_limit=20,
                        correct_tags=True)
 
 
@@ -146,10 +136,9 @@ class Robot(commands.Bot):
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     try:
-        pool = loop.run_until_complete(Table.create_pool(settings['pg']['uri_home'], max_size=15))
+        pool = loop.run_until_complete(Table.create_pool(settings['pg']['uri'], max_size=15))
         bot = Robot()
         bot.pool = pool
-        bot.repo = git.Repo(os.getcwd())
         bot.loop = loop
         bot.run(token, reconnect=True)
     except:

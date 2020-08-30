@@ -1,15 +1,12 @@
 import discord
-import math
 import time
-import traceback
 
 from discord.ext import commands, tasks
 from cogs.utils.cache import get_neighbors
 from cogs.utils.constants import clans
 from cogs.utils.converters import PlayerConverter, ClanConverter
 from cogs.utils import formats
-from datetime import datetime, timedelta
-from config import settings
+from datetime import datetime
 
 
 class Push(commands.Cog):
