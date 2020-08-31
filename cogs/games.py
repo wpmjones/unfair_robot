@@ -167,7 +167,7 @@ class Games(commands.Cog):
                 sql = ("SELECT SUM(current_points - starting_points) AS clan_total, clan_tag "
                        "FROM uw_clan_games "
                        "WHERE event_id = $1 "
-                       "GROUP BY clan_name "
+                       "GROUP BY clan_tag "
                        "ORDER BY clan_total DESC")
                 fetch = await conn.fetch(sql, games_id)
                 data = []
