@@ -15,7 +15,7 @@ enviro = "LIVE"
 
 initial_extensions = ["cogs.general",
                       "cogs.admin",
-                      "cogs.push",
+                      "cogs.games",
                       ]
 
 if enviro == "LIVE":
@@ -24,8 +24,8 @@ if enviro == "LIVE":
     log_level = "INFO"
     coc_names = "uw"
 elif enviro == "home":
-    token = settings['discord']['token']
-    prefix = "+"
+    token = settings['discord']['testing']
+    prefix = ">"
     log_level = "INFO"
     coc_names = "ubuntu"
 else:
@@ -44,7 +44,7 @@ coc_client = coc.login(settings['cocpy']['user'],
                        client=coc.EventsClient,
                        key_names=coc_names,
                        key_count=4,
-                       throttle_limit=30,
+                       throttle_limit=20,
                        correct_tags=True)
 
 intents = discord.Intents.default()
@@ -141,7 +141,7 @@ class Robot(commands.Bot):
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     try:
-        pool = loop.run_until_complete(Table.create_pool(settings['pg']['uri_home'], max_size=15))
+        pool = loop.run_until_complete(Table.create_pool(settings['pg']['uri'], max_size=15))
         bot = Robot()
         bot.pool = pool
         bot.loop = loop
