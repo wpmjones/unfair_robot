@@ -1,8 +1,6 @@
 import asyncio
 import coc
 import discord
-import git
-import os
 import sys
 import traceback
 
@@ -13,7 +11,7 @@ from datetime import datetime
 from loguru import logger
 from config import settings
 
-enviro = "home"
+enviro = "LIVE"
 
 initial_extensions = ["cogs.general",
                       "cogs.admin",
@@ -41,28 +39,25 @@ description = ("Unfair Robot welcomes you to his laboratory.\n"
                "Proudly maintained by TubaKid.\n\n")
 
 
-class CustomClient(coc.EventsClient):
-    def _create_status_tasks(self, cached_war, war):
-        if cached_war.state != war.state:
-            self.dispatch("on_war_state_change", war.state, war)
-
-        super()._create_status_tasks(cached_war, war)
-
-
 coc_client = coc.login(settings['cocpy']['user'],
                        settings['cocpy']['pass'],
-                       client=CustomClient,
+                       client=coc.EventsClient,
                        key_names=coc_names,
                        key_count=4,
                        throttle_limit=30,
                        correct_tags=True)
+
+intents = discord.Intents.default()
+intents.members = True
 
 
 class Robot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix=prefix,
                          description=description,
-                         case_insensitive=True)
+                         case_insensitive=True,
+                         intents=intents,
+                         )
         self.coc = coc_client
         self.logger = logger
         self.color = discord.Color.dark_red()
@@ -73,7 +68,7 @@ class Robot(commands.Bot):
                 self.load_extension(extension)
                 self.logger.debug(f"{extension} loaded successfully")
             except Exception as extension:
-                self.logger.error(f"Failed to load extenstion {extension}.", file=sys.stderr)
+                self.logger.error(f"Failed to load extension {extension}.", file=sys.stderr)
                 traceback.print_exc()
 
     @property
@@ -149,7 +144,6 @@ if __name__ == "__main__":
         pool = loop.run_until_complete(Table.create_pool(settings['pg']['uri_home'], max_size=15))
         bot = Robot()
         bot.pool = pool
-        bot.repo = git.Repo(os.getcwd())
         bot.loop = loop
         bot.run(token, reconnect=True)
     except:

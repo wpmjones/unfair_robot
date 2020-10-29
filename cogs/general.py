@@ -1,6 +1,5 @@
 from discord.ext import commands
 from cogs.utils.converters import PlayerConverter
-from config import settings
 
 
 class General(commands.Cog):
