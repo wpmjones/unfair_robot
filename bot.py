@@ -47,6 +47,7 @@ coc_client = coc.login(settings['cocpy']['user'],
                        throttle_limit=20,
                        correct_tags=True)
 
+# new intents
 intents = discord.Intents.default()
 intents.members = True
 
