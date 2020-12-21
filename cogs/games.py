@@ -111,6 +111,31 @@ class Games(commands.Cog):
     async def before_start_games(self):
         await self.bot.wait_until_ready()
 
+    @commands.command(name="startnow", hidden=True)
+    @commands.is_owner()
+    async def manual_start(self, ctx):
+        conn = self.bot.pool
+        games_id = 22
+        to_insert = []
+        counter = 0
+        async for clan in self.bot.coc.get_clans(clans):
+            async for member in clan.get_detailed_members():
+                counter += 1
+                to_insert.append((counter,
+                                  games_id,
+                                  member.tag[1:],
+                                  clan.tag[1:],
+                                  member.get_achievement("Games Champion").value,
+                                  0, None
+                                  ))
+        sql = ("INSERT INTO uw_clan_games "
+               "(event_id, player_tag, clan_tag, starting_points, current_points, max_reached) "
+               "SELECT x.event_id, x.player_tag, x.clan_tag, x.starting_points, "
+               "x.current_points, x.max_reached "
+               "FROM unnest($1::uw_clan_games[]) as x")
+        await conn.execute(sql, to_insert)
+        await ctx.send(f"{counter} players added to UW Clan Games event. Game on!")
+
     @tasks.loop(minutes=12)
     async def update_games(self):
         """Task to pull API data for clan games"""
