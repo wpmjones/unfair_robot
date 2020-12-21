@@ -5,6 +5,7 @@ import sys
 import traceback
 
 from discord.ext import commands
+from coc.ext import discordlinks
 from cogs.utils import context
 from cogs.utils.db import Table
 from datetime import datetime
@@ -43,11 +44,13 @@ coc_client = coc.login(settings['cocpy']['user'],
                        settings['cocpy']['pass'],
                        client=coc.EventsClient,
                        key_names=coc_names,
-                       key_count=4,
+                       key_count=2,
                        throttle_limit=20,
                        correct_tags=True)
 
-# new intents
+links_client = discordlinks.login(settings['links']['user'],
+                                  settings['links']['pass'])
+
 intents = discord.Intents.default()
 intents.members = True
 
@@ -60,6 +63,7 @@ class Robot(commands.Bot):
                          intents=intents,
                          )
         self.coc = coc_client
+        self.links = links_client
         self.logger = logger
         self.color = discord.Color.dark_red()
         self.loop.create_task(self.after_ready())

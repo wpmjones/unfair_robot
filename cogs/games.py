@@ -1,3 +1,4 @@
+import asyncio
 import math
 import re
 
@@ -14,6 +15,8 @@ class Games(commands.Cog):
     """Cog for Clan Games"""
     def __init__(self, bot):
         self.bot = bot
+        self.channel = None
+        self.channel_id = 790235721470443522
         self.start_games.start()
         self.update_games.start()
 
@@ -78,29 +81,31 @@ class Games(commands.Cog):
         """Task to pull initial Games data for the new clan games"""
         now = datetime.utcnow()
         conn = self.bot.pool
-        games_id = await self.get_next_games()
-        self.bot.logger.info(f"get_next_games: {games_id}")
+        games_id, start_time = await self.get_next_games()
+        # games_id = 22
         if games_id:
-            sql = "SELECT start_time FROM rcs_events WHERE event_id = $1"
-            start_time = await conn.fetchval(sql, games_id)
-            self.bot.logger.info(f"start_games:\n  Start Time: {start_time}")
+            # sql = "SELECT start_time FROM rcs_events WHERE event_id = $1"
+            # start_time = await conn.fetchval(sql, games_id)
             if start_time - now < timedelta(minutes=10):
                 to_insert = []
+                counter = 0
                 async for clan in self.bot.coc.get_clans(clans):
-                    counter = 1
                     async for member in clan.get_detailed_members():
+                        counter += 1
                         to_insert.append((counter,
                                           games_id,
                                           member.tag[1:],
                                           clan.tag[1:],
                                           member.get_achievement("Games Champion").value,
-                                          member.get_achievement("Games Champion").value
+                                          0, None
                                           ))
-                        counter += 1
-                sql = ("INSERT INTO uw_clan_games (event_id, player_tag, clan_tag, starting_points, current_points) "
-                       "SELECT x.event_id, x.player_tag, x.clan_tag, x.starting_points, x.current_points "
-                       "FROM unnest($1::rcs_clan_games[]) as x")
+                sql = ("INSERT INTO uw_clan_games "
+                       "(event_id, player_tag, clan_tag, starting_points, current_points, max_reached) "
+                       "SELECT x.event_id, x.player_tag, x.clan_tag, x.starting_points, "
+                       "x.current_points, x.max_reached "
+                       "FROM unnest($1::uw_clan_games[]) as x")
                 await conn.execute(sql, to_insert)
+                self.bot.logger.info(f"{counter} players added to UW Clan Games event. Game on!")
 
     @start_games.before_loop
     async def before_start_games(self):
@@ -111,13 +116,30 @@ class Games(commands.Cog):
         """Task to pull API data for clan games"""
         conn = self.bot.pool
         games = await self.get_current_games()
+        now = datetime.utcnow()
+        if not self.channel:
+            self.channel = self.bot.get_channel(self.channel_id)
         if games:
-            sql = "SELECT points_id, player_tag FROM uw_clan_games WHERE event_id = $1"
+            sql = "SELECT player_tag, clan_tag, starting_points, max_reached FROM uw_clan_games WHERE event_id = $1"
             players = await conn.fetch(sql, games['games_id'])
-            sql = "UPDATE uw_clan_games SET current_points = $1 WHERE points_id = $2"
             for row in players:
                 player = await self.bot.coc.get_player(row['player_tag'])
-                await conn.execute(sql, player.get_achievement("Games Champion").value, row['points_id'])
+                current_points = player.get_achievement("Games Champion").value - row['starting_points']
+                if current_points >= games['player_points'] and not row['max_reached']:
+                    max_reached = now
+                    sql = ("UPDATE uw_clan_games "
+                           "SET current_points = $1, max_reached = $2 "
+                           "WHERE player_tag = $3")
+                    await conn.execute(sql, current_points, max_reached, player.tag[1:])
+                    clan = await self.bot.coc.get_clan(row['clan_tag'])
+                    content = f":trophy: {player.name} ({clan.name}) just hit max points for Clan Games!"
+                    await self.channel.send(content)
+                else:
+                    sql = ("UPDATE uw_clan_games "
+                           "SET current_points = $1 "
+                           "WHERE player_tag = $2")
+                    await conn.execute(sql, current_points, player.tag[1:])
+            print("Done")
 
     @update_games.before_loop
     async def before_update_games(self):
@@ -136,11 +158,11 @@ class Games(commands.Cog):
 
     @games.command(name="all")
     async def games_all(self, ctx):
-        """Returns clan points for all RCS clans"""
+        """Returns clan points for all participating clans"""
         conn = self.bot.pool
         games = await self.get_current_games()
         if games:
-            sql = ("SELECT SUM(current_points - starting_points) AS clan_total, clan_tag "
+            sql = ("SELECT SUM(current_points) AS clan_total, clan_tag "
                    "FROM uw_clan_games "
                    "WHERE event_id = $1 "
                    "GROUP BY clan_tag "
@@ -164,7 +186,7 @@ class Games(commands.Cog):
                 # TODO Next line will need formatting
                 return await ctx.send(f"Clan Games are not currently active. Next games starts at {next_start}")
             else:
-                sql = ("SELECT SUM(current_points - starting_points) AS clan_total, clan_tag "
+                sql = ("SELECT SUM(current_points) AS clan_total, clan_tag "
                        "FROM uw_clan_games "
                        "WHERE event_id = $1 "
                        "GROUP BY clan_tag "
@@ -184,14 +206,31 @@ class Games(commands.Cog):
     @games.command(name="top")
     async def games_top(self, ctx):
         """Show top ten players' games points"""
-        await ctx.invoke(self.bot.get_command("top games"))
+        async with ctx.typing():
+            conn = self.bot.pool
+            games = await self.get_current_games()
+            if games:
+                sql = ("SELECT player_tag, current_points "
+                       "FROM uw_clan_games "
+                       "WHERE event_id = $1 "
+                       "ORDER BY current_points DESC "
+                       "LIMIT 10")
+                fetch = await conn.fetch(sql, games['games_id'])
+                data = []
+                for row in fetch:
+                    player = await self.bot.coc.get_player(row['player_tag'])
+                    data.append([row['current_points'], f"{player.name} ({player.clan.name})"])
+                title = "UW Top Ten for Clan Games"
+                ctx.icon = "https://cdn.discordapp.com/emojis/635642869750824980.png"
+                p = formats.TablePaginator(ctx, data=data, title=title, page_count=1)
+            await p.paginate()
 
     @games.command(name="average", aliases=["avg", "averages"])
     async def games_average(self, ctx):
-        """Returns the average player points for all RCS clans"""
+        """Returns the average player points for all participating clans"""
         conn = self.bot.pool
         sql = ("SELECT clan_avg, clan_tag "
-               "FROM rcs_clan_games_average "
+               "FROM uw_clan_games_average "
                "ORDER BY clan_avg DESC")
         fetch = await conn.fetch(sql)
         data = []
@@ -218,29 +257,30 @@ class Games(commands.Cog):
                    "WHERE event_type_id = 1 and start_time < NOW() "
                    "ORDER BY start_time DESC")
             player_points = await conn.fetchval(sql)
-            sql = ("SELECT player_name, points "
-                   "FROM uw_clan_games_players "
+            sql = ("SELECT player_tag, current_points "
+                   "FROM uw_clan_games "
                    "WHERE clan_tag = $1"
-                   "ORDER BY points DESC")
+                   "ORDER BY current_points DESC")
             fetch = await conn.fetch(sql, clan.tag[1:])
             clan_total = 0
             clan_size = len(fetch)
             data = []
             for member in fetch:
-                player = await self.bot.coc.get_player(member['player_name'])
+                player = await self.bot.coc.get_player(member['player_tag'])
                 player_name = player.name
-                if member['points'] >= player_points:
+                if member['current_points'] >= player_points:
                     clan_total += player_points
-                    data.append([member['points'], "* " + player_name])
+                    data.append([member['current_points'], "* " + player_name])
                 else:
-                    clan_total += member['points']
-                    data.append([member['points'], player_name])
+                    clan_total += member['current_points']
+                    data.append([member['current_points'], player_name])
             clan_average = clan_total / clan_size
         page_count = math.ceil(len(data) / 25)
         title = f"{clan.name} Points {clan_total} ({clan_average:.2f} avg)"
         ctx.icon = "https://cdn.discordapp.com/emojis/639623355770732545.png"
         p = formats.TablePaginator(ctx, data=data, title=title, page_count=page_count)
         await p.paginate()
+
 
 def setup(bot):
     bot.add_cog(Games(bot))

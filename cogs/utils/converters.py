@@ -2,7 +2,8 @@ import coc
 import re
 
 from discord.ext import commands
-from cogs.utils.cache import get_data
+# from cogs.utils.cache import get_data
+from cogs.utils.constants import clans, clan_names
 
 
 tag_validator = re.compile("^#?[PYLQGRJCUV0289]+$")
@@ -10,13 +11,11 @@ tag_validator = re.compile("^#?[PYLQGRJCUV0289]+$")
 
 class PlayerConverter(commands.Converter):
     async def convert(self, ctx, argument):
-        if isinstance(argument, coc.BasicPlayer):
+        if isinstance(argument, coc.Player):
             return argument
 
         tag = coc.utils.correct_tag(argument)
         name = argument.strip().lower()
-        data = await get_data()
-        player_names = [p['player_name'].lower() for p in data]
 
         if tag_validator.match(argument):
             try:
@@ -48,26 +47,26 @@ class PlayerConverter(commands.Converter):
 
 class ClanConverter(commands.Converter):
     async def convert(self, ctx, argument):
-        if argument == "all" or not argument:
-            return await get_data()
-        if isinstance(argument, coc.BasicClan):
+        # if argument == "all" or not argument:
+        #     return await get_data()
+        if isinstance(argument, coc.Clan) and argument.tag in clans:
             return [argument]
 
         tag = coc.utils.correct_tag(argument)
         name = argument.strip().lower()
-        data = await get_data()
 
-        if tag_validator.match(argument):
+        if tag_validator.match(tag):
             try:
-                for row in data:
-                    if row['clan_tag'] == tag[1:]:
-                        return await ctx.coc.get_clan(tag)
+                if tag in clans:
+                    return await ctx.coc.get_clan(tag)
                 else:
                     raise commands.BadArgument("Clan not found in database. "
                                                "Only UW clans are listed in the database.")
             except coc.NotFound:
                 raise commands.BadArgument(f'{tag} is not a valid clan tag.')
-        for row in data:
-            if row['clan_name'].lower() == name:
-                return await ctx.coc.get_clan(row['clan_tag'])
+        if name in clan_names:
+            for tag in clans:
+                clan = await ctx.coc.get_clan(tag)
+                if clan.name == name:
+                    return clan
         raise commands.BadArgument(f'Clan name or tag `{argument}` not found')
